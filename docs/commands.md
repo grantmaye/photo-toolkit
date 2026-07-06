@@ -10,3 +10,10 @@
 - `report`: generate CSV and HTML reports.
 - `strip-gps`: remove GPS metadata when executed.
 - `convert-heic`: convert HEIC/HEIF to JPEG output copies.
+- `plan`: write a reviewable JSON plan for rename, date-fix, year-fix, or prefix-move operations.
+- `apply-plan`: apply supported operations from a reviewed plan. Dry-run by default.
+- `undo`: reverse supported move/rename operations from a previous `operations.csv`.
+- `date-audit`: compare filename dates and metadata dates.
+- `validate-import`: validate a staging folder for Immich, PhotoPrism, Apple Photos, Synology Photos, or vault imports.
+
+Move and rename commands support `--on-conflict skip|suffix|error|replace-never`, `--no-sidecars`, and `--no-live-photos`.

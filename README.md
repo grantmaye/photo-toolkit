@@ -47,8 +47,13 @@ If ExifTool is missing, metadata-writing commands fail gracefully with install i
 
 ```bash
 photo verify /path/to/staging
+photo date-audit /path/to/staging --output date-audit.csv
+photo validate-import /path/to/staging --target immich
 photo report /path/to/staging --output ./photo-report
 photo hash /path/to/staging --output hashes.csv
+photo plan /path/to/staging --mode rename-from-exif --output photo-plan.json
+photo apply-plan photo-plan.json
+photo apply-plan photo-plan.json --execute
 photo rename-from-exif /path/to/staging
 photo rename-from-exif /path/to/staging --execute
 ```
@@ -69,6 +74,21 @@ photo fix-date /path/to/staging/wedding --date 20220716
 photo fix-date /path/to/staging/wedding --date 20220716 --execute
 ```
 
+Create, review, and apply a plan:
+
+```bash
+photo plan /path/to/staging/wedding --mode fix-date --date 20220716 --output wedding-plan.json
+photo apply-plan wedding-plan.json
+photo apply-plan wedding-plan.json --execute
+```
+
+Undo supported move/rename operations from a previous run:
+
+```bash
+photo undo photo-toolkit-runs/20260706-120000
+photo undo photo-toolkit-runs/20260706-120000 --execute
+```
+
 Fix only the year while preserving month, day, and time where possible:
 
 ```bash
@@ -82,6 +102,8 @@ Find and move duplicates:
 photo remove-duplicates /path/to/staging
 photo remove-duplicates /path/to/staging --move-to /path/to/duplicates --execute
 ```
+
+Commands that move or rename files also handle common sidecars (`.xmp`, `.aae`, `.json`, `.dop`, `.pp3`) and Live Photo image/video partners by default. Use `--no-sidecars` or `--no-live-photos` to disable that behavior.
 
 ## Immich workflow
 
