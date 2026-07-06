@@ -1,8 +1,19 @@
 # photo-toolkit
 
+[![tests](https://github.com/grantmaye/photo-toolkit/actions/workflows/test.yml/badge.svg)](https://github.com/grantmaye/photo-toolkit/actions/workflows/test.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](pyproject.toml)
+[![Status](https://img.shields.io/badge/status-alpha-orange.svg)](#project-status)
+
 `photo-toolkit` is a reusable open-source command-line toolkit for preparing photo and video libraries before importing them into Immich, PhotoPrism, Synology Photos, Apple Photos, or long-term vault/archive folders.
 
 The CLI command is named `photo`.
+
+## Project status
+
+`photo-toolkit` is alpha software. It is designed around conservative dry-runs, reviewable reports, and explicit execution flags, but you should still test it on copies first and back up important media before metadata-changing commands.
+
+Current release: `v0.2.0`
 
 ## Why it exists
 
@@ -20,6 +31,12 @@ Large personal media libraries are often messy: mixed camera exports, scanned ar
 - Back up your photos before running metadata-changing commands.
 
 ## Install
+
+Recommended for now, directly from GitHub:
+
+```bash
+pipx install git+https://github.com/grantmaye/photo-toolkit.git
+```
 
 From a local checkout:
 
@@ -42,6 +59,16 @@ sudo apt install libimage-exiftool-perl
 ```
 
 If ExifTool is missing, metadata-writing commands fail gracefully with install instructions.
+
+## Packages and releases
+
+GitHub Releases are the right fit while the project is alpha. PyPI packaging can come after a little more real-world testing and API/CLI stabilization.
+
+For now:
+
+- Use GitHub Releases for tagged versions and release notes.
+- Install with `pipx` from GitHub or `pip install -e .` from a checkout.
+- Defer PyPI until the CLI has a stable `v0.3` or `v1.0` command contract.
 
 ## Quick start
 
