@@ -1,0 +1,12 @@
+# Example presets for common import targets.
+presets:
+  immich:
+    rename_format: "YYYYMMDD_HHMMSS_originalfilename.ext"
+    prefer_metadata_dates: true
+    detect_live_photos: true
+  nas_archive:
+    write_hash_manifest: true
+    move_duplicates: true
+  private_vault:
+    strip_gps: true
+    require_backup_warning: true
