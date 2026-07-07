@@ -52,11 +52,11 @@ def test_fix_date_builds_correct_new_filename(tmp_path: Path) -> None:
     path = tmp_path / "20140101_091011_camera.jpg"
     path.write_bytes(b"image")
 
-    captured = build_fixed_date(path, "20220716")
+    captured = build_fixed_date(path, "20200101")
     new_name = filename_with_datetime(path, captured)
 
-    assert captured.strftime("%Y%m%d_%H%M%S") == "20220716_091011"
-    assert new_name == "20220716_091011_camera.jpg"
+    assert captured.strftime("%Y%m%d_%H%M%S") == "20200101_091011"
+    assert new_name == "20200101_091011_camera.jpg"
 
 
 def test_fix_year_preserves_month_day_time(tmp_path: Path) -> None:
@@ -76,12 +76,12 @@ def test_rename_from_exif_uses_metadata_date(tmp_path: Path, monkeypatch: pytest
 
     monkeypatch.setattr(
         "photo.commands.rename_from_exif.capture_datetime",
-        lambda p: (datetime(2022, 7, 16, 9, 10, 11), "DateTimeOriginal"),
+        lambda p: (datetime(2020, 1, 1, 9, 10, 11), "DateTimeOriginal"),
     )
     run_dir = rename_from_exif.run(folder, execute=False)
 
     rows = read_operations(run_dir)
-    assert rows[0]["destination"].endswith("20220716_091011_camera.jpg")
+    assert rows[0]["destination"].endswith("20200101_091011_camera.jpg")
     assert rows[0]["date_source"] == "DateTimeOriginal"
 
 
@@ -114,7 +114,7 @@ def test_report_generation(tmp_path: Path) -> None:
     folder = tmp_path / "photos"
     output = tmp_path / "out"
     folder.mkdir()
-    (folder / "20220716_091011_a.jpg").write_bytes(b"a")
+    (folder / "20200101_091011_a.jpg").write_bytes(b"a")
 
     report.run(folder, output=output)
 
@@ -132,10 +132,10 @@ def test_fix_date_dry_run_writes_plan(tmp_path: Path) -> None:
     folder.mkdir()
     (folder / "20140101_091011_a.jpg").write_bytes(b"a")
 
-    run_dir = fix_date.run(folder, "20220716", execute=False)
+    run_dir = fix_date.run(folder, "20200101", execute=False)
 
     rows = read_operations(run_dir)
-    assert rows[0]["destination"].endswith("20220716_091011_a.jpg")
+    assert rows[0]["destination"].endswith("20200101_091011_a.jpg")
 
 
 def test_fix_year_dry_run_writes_plan(tmp_path: Path) -> None:
@@ -156,24 +156,24 @@ def test_sidecar_is_planned_with_rename(tmp_path: Path, monkeypatch: pytest.Monk
     (folder / "camera.xmp").write_text("sidecar", encoding="utf-8")
     monkeypatch.setattr(
         "photo.commands.rename_from_exif.capture_datetime",
-        lambda p: (datetime(2022, 7, 16, 9, 10, 11), "DateTimeOriginal"),
+        lambda p: (datetime(2020, 1, 1, 9, 10, 11), "DateTimeOriginal"),
     )
 
     run_dir = rename_from_exif.run(folder, execute=False)
 
     rows = read_operations(run_dir)
     assert {row["action"] for row in rows} == {"rename", "sidecar-rename"}
-    assert any(row["destination"].endswith("20220716_091011_camera.xmp") for row in rows)
+    assert any(row["destination"].endswith("20200101_091011_camera.xmp") for row in rows)
 
 
 def test_collision_skip_marks_operation_skipped(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     folder = tmp_path / "photos"
     folder.mkdir()
     (folder / "camera.jpg").write_bytes(b"image")
-    (folder / "20220716_091011_camera.jpg").write_bytes(b"existing")
+    (folder / "20200101_091011_camera.jpg").write_bytes(b"existing")
     monkeypatch.setattr(
         "photo.commands.rename_from_exif.capture_datetime",
-        lambda p: (datetime(2022, 7, 16, 9, 10, 11), "DateTimeOriginal"),
+        lambda p: (datetime(2020, 1, 1, 9, 10, 11), "DateTimeOriginal"),
     )
 
     run_dir = rename_from_exif.run(folder, execute=False, collision="skip")
@@ -190,14 +190,14 @@ def test_plan_writes_json_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
     (folder / "camera.jpg").write_bytes(b"image")
     monkeypatch.setattr(
         "photo.commands.plan.capture_datetime",
-        lambda p: (datetime(2022, 7, 16, 9, 10, 11), "DateTimeOriginal"),
+        lambda p: (datetime(2020, 1, 1, 9, 10, 11), "DateTimeOriginal"),
     )
 
     plan.run(folder, output)
 
     payload = json.loads(output.read_text(encoding="utf-8"))
     assert payload["version"] == 1
-    assert payload["operations"][0]["destination"].endswith("20220716_091011_camera.jpg")
+    assert payload["operations"][0]["destination"].endswith("20200101_091011_camera.jpg")
 
 
 def test_apply_plan_dry_run_does_not_move(tmp_path: Path) -> None:
@@ -252,8 +252,8 @@ def test_date_audit_generates_csv(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
     folder = tmp_path / "photos"
     output = tmp_path / "audit.csv"
     folder.mkdir()
-    (folder / "20220716_091011_a.jpg").write_bytes(b"a")
-    monkeypatch.setattr("photo.commands.date_audit.read_metadata", lambda p: {"DateTimeOriginal": "2022:07:16 09:10:11"})
+    (folder / "20200101_091011_a.jpg").write_bytes(b"a")
+    monkeypatch.setattr("photo.commands.date_audit.read_metadata", lambda p: {"DateTimeOriginal": "2020:01:01 09:10:11"})
 
     date_audit.run(folder, output)
 

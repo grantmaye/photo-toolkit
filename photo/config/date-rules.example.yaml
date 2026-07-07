@@ -1,7 +1,7 @@
 # Example date correction rules.
 rules:
   - match_prefix: "20140101"
-    date: "20220716"
+    date: "20200101"
     description: "Correct known event date."
   - match_folder: "to2018"
     year: 2018
