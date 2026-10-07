@@ -13,6 +13,11 @@ from photo.core.metadata import build_fixed_date, build_fixed_year, filename_wit
 from photo.core.safety import SafetyError, assert_safe_source
 
 
+@pytest.fixture(autouse=True)
+def isolated_working_directory(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.chdir(tmp_path)
+
+
 def read_operations(run_dir: Path) -> list[dict[str, str]]:
     with (run_dir / "operations.csv").open(newline="", encoding="utf-8") as handle:
         return list(csv.DictReader(handle))
@@ -237,7 +242,7 @@ def test_undo_dry_run_plans_reversal(tmp_path: Path) -> None:
     run_dir.mkdir()
     operations = run_dir / "operations.csv"
     operations.write_text(
-        "action,source,destination\nrename,/tmp/source.jpg,/tmp/destination.jpg\n",
+        "action,source,destination,executed\nrename,/tmp/source.jpg,/tmp/destination.jpg,True\n",
         encoding="utf-8",
     )
 
@@ -272,3 +277,94 @@ def test_validate_import_flags_zero_byte(tmp_path: Path) -> None:
 
     rows = list(csv.DictReader(output.open(newline="", encoding="utf-8")))
     assert "zero-byte" in rows[0]["warnings"]
+
+
+def test_undo_refuses_dry_run_and_skipped_records(tmp_path: Path) -> None:
+    from photo.core.operations import reverse_operations
+    rows = [{"action": "rename", "source": "a", "destination": "b", "executed": value} for value in ("False", "", "false")]
+    rows.append({"action": "move", "source": "a", "destination": "b", "executed": "True", "skipped": "True"})
+    assert reverse_operations(rows) == []
+
+
+def test_apply_logs_collision_destination_and_undo_restores(tmp_path: Path) -> None:
+    source, target = tmp_path / "a.jpg", tmp_path / "b.jpg"
+    source.write_bytes(b"original")
+    target.write_bytes(b"unrelated")
+    plan_file = tmp_path / "plan.json"
+    plan_file.write_text(json.dumps({"version": 1, "operations": [{"action": "rename", "source": str(source), "destination": str(target)}]}))
+    run_dir = apply_plan.run(plan_file, execute=True)
+    rows = read_operations(run_dir)
+    assert rows[0]["destination"] == str(tmp_path / "b_1.jpg")
+    assert rows[0]["executed"] == "True"
+    undo_dir = undo.run(run_dir, execute=True)
+    assert source.read_bytes() == b"original"
+    assert target.read_bytes() == b"unrelated"
+    assert read_operations(undo_dir)[0]["executed"] == "True"
+    assert run_dir != undo_dir
+
+
+def test_skipped_plan_is_safe_and_failed_move_is_not_undoable(tmp_path: Path) -> None:
+    from photo.core.operations import reverse_operations
+    plan_file = tmp_path / "plan.json"
+    plan_file.write_text(json.dumps({"version": 1, "operations": [
+        {"action": "rename", "source": "missing.jpg", "destination": "b.jpg", "skipped": True},
+        {"action": "rename", "source": "missing.jpg", "destination": "b.jpg"},
+    ]}))
+    run_dir = apply_plan.run(plan_file, execute=True)
+    assert reverse_operations(read_operations(run_dir)) == []
+    assert json.loads((run_dir / "summary.json").read_text())["errors"] == 1
+
+
+@pytest.mark.parametrize("payload", [[], {"version": 2, "operations": []}, {"version": 1, "operations": ["bad"]}])
+def test_invalid_plan_schema_rejected(tmp_path: Path, payload) -> None:
+    from photo.core.operations import read_plan
+    path = tmp_path / "plan.json"
+    path.write_text(json.dumps(payload))
+    with pytest.raises(ValueError):
+        read_plan(path)
+
+
+def test_plan_does_not_move_directories_or_symlinks(tmp_path: Path) -> None:
+    from photo.core.operations import apply_file_operation
+    folder = tmp_path / "folder"
+    folder.mkdir()
+    assert not apply_file_operation({"action": "move", "source": str(folder), "destination": str(tmp_path / "other")})[0]
+    source = tmp_path / "file.jpg"
+    source.write_bytes(b"image")
+    link = tmp_path / "link.jpg"
+    link.symlink_to(source)
+    assert not apply_file_operation({"action": "move", "source": str(link), "destination": str(tmp_path / "other")})[0]
+    assert source.read_bytes() == b"image"
+
+
+def test_written_plan_paths_survive_working_directory_change(tmp_path: Path, monkeypatch) -> None:
+    from photo.core.operations import write_plan
+    Path("a.jpg").write_bytes(b"image")
+    plan_file = tmp_path / "plan.json"
+    write_plan(plan_file, [{"action": "rename", "source": "a.jpg", "destination": "b.jpg"}])
+    child = tmp_path / "child"
+    child.mkdir()
+    monkeypatch.chdir(child)
+    apply_plan.run(plan_file, execute=True)
+    assert (tmp_path / "b.jpg").read_bytes() == b"image"
+
+
+def test_html_report_escapes_filenames(tmp_path: Path):
+    folder = tmp_path / "photos"
+    folder.mkdir()
+    (folder / '<img src=x onerror=alert(1)>.jpg').write_bytes(b"fixture")
+    output = tmp_path / "report"
+    report.run(folder, output)
+    html = (output / "report.html").read_text()
+    assert "<img" not in html
+    assert "&lt;img" in html
+
+
+def test_cli_returns_failure_for_recorded_operation_error(tmp_path: Path):
+    from typer.testing import CliRunner
+    from photo.cli import app
+    path = tmp_path / "plan.json"
+    path.write_text(json.dumps({"version": 1, "operations": [{"action": "rename", "source": "missing.jpg", "destination": "target.jpg"}]}))
+    result = CliRunner().invoke(app, ["apply-plan", str(path), "--execute"])
+    assert result.exit_code == 1
+    assert "errors.csv" in result.stdout

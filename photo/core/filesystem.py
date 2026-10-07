@@ -39,12 +39,14 @@ class FileInfo:
 
 def iter_files(root: Path, recursive: bool = True) -> Iterable[Path]:
     root = Path(root)
+    if root.is_symlink():
+        return
     if root.is_file():
         yield root
         return
     pattern = "**/*" if recursive else "*"
     for path in root.glob(pattern):
-        if path.is_file():
+        if path.is_file() and not path.is_symlink():
             yield path
 
 
@@ -131,7 +133,7 @@ def associated_files(path: Path, include_sidecars: bool = True, include_live_pho
             files.append(partner)
             if include_sidecars:
                 files.extend(sidecar_files(partner))
-    return sorted({file for file in files if file.exists() and file.is_file()})
+    return sorted({file for file in files if file.exists() and file.is_file() and not file.is_symlink()})
 
 
 def retarget_associated_file(source: Path, target: Path, associated: Path) -> Path:

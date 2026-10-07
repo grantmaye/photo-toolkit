@@ -19,6 +19,8 @@ def run(
     assert_safe_source(folder, allow_root_path)
     if move_to:
         assert_distinct_paths(folder, move_to)
+    if delete and move_to:
+        raise SafetyError("Choose either --move-to or --delete, not both.")
     if delete and not execute:
         raise SafetyError("--delete requires --execute.")
     if execute and not move_to and not delete:
@@ -32,17 +34,19 @@ def run(
         for duplicate in sorted(paths)[1:]:
             target = unique_destination(move_to / duplicate.name) if move_to else ""
             action = "delete" if delete else "move"
-            report.operation(
+            operation = report.operation(
                 action=action,
                 sha256=digest,
                 keeper=str(keeper),
                 duplicate=str(duplicate),
                 destination=str(target),
-                executed=execute,
+                executed=False,
             )
             if execute and delete:
                 duplicate.unlink()
+                operation["executed"] = True
             elif execute and move_to:
                 shutil.move(str(duplicate), str(target))
+                operation["executed"] = True
     report.finish({"execute": execute, "duplicate_groups": len(groups)})
     return report.run_dir

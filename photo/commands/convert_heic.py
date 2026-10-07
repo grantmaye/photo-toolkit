@@ -16,7 +16,7 @@ def run(folder: Path, output: Path, execute: bool, allow_root_path: bool = False
         output.mkdir(parents=True, exist_ok=True)
     for path in files:
         target = unique_destination(output / f"{path.stem}.jpg")
-        report.operation(action="convert-heic", source=str(path), destination=str(target), executed=execute)
+        operation = report.operation(action="convert-heic", source=str(path), destination=str(target), executed=False)
         if execute:
             try:
                 from PIL import Image
@@ -25,6 +25,7 @@ def run(folder: Path, output: Path, execute: bool, allow_root_path: bool = False
                 pillow_heif.register_heif_opener()
                 with Image.open(path) as image:
                     image.convert("RGB").save(target, "JPEG", quality=95)
+                operation["executed"] = True
             except ImportError as exc:
                 report.error(path, "Install HEIC support with `pip install photo-toolkit[heic]`.")
                 break

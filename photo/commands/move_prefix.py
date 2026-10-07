@@ -35,16 +35,17 @@ def run(
             target = retarget_associated_file(path, destination / path.name, associated)
             resolved = resolve_destination(associated, target, collision)
             action = "move" if associated == path else "sidecar-move"
-            report.operation(
+            operation = report.operation(
                 action=action,
                 source=str(associated),
                 destination=str(resolved or target),
                 collision=collision,
-                executed=execute,
+                executed=False,
                 skipped=resolved is None,
             )
             if execute and resolved:
                 resolved.parent.mkdir(parents=True, exist_ok=True)
                 shutil.move(str(associated), str(resolved))
+                operation["executed"] = True
     report.finish({"execute": execute})
     return report.run_dir

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import typer
@@ -30,12 +31,16 @@ console = Console()
 
 def _done(run_dir: Path) -> None:
     console.print(f"Run log: {run_dir}")
+    errors = json.loads((run_dir / "summary.json").read_text(encoding="utf-8")).get("errors", 0)
+    if errors:
+        console.print(f"[red]{errors} operation error(s); review errors.csv.[/red]")
+        raise typer.Exit(code=1)
 
 
 def _handle(func, *args, **kwargs) -> None:
     try:
         _done(func(*args, **kwargs))
-    except (SafetyError, ValueError, FileExistsError) as exc:
+    except (SafetyError, ValueError, OSError) as exc:
         raise typer.BadParameter(str(exc)) from exc
 
 

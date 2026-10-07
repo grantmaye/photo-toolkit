@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import json
+import tempfile
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -18,11 +19,15 @@ class RunReport:
 
     def __post_init__(self) -> None:
         timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-        self.run_dir = self.root / timestamp
-        self.run_dir.mkdir(parents=True, exist_ok=True)
+        self.root.mkdir(parents=True, exist_ok=True)
+        self.run_dir = Path(tempfile.mkdtemp(prefix=f"{timestamp}-", dir=self.root))
 
-    def operation(self, **row: Any) -> None:
+    def operation(self, **row: Any) -> dict[str, Any]:
+        for key in ("source", "destination", "duplicate", "keeper"):
+            if row.get(key):
+                row[key] = str(Path(row[key]).absolute())
         self.operations.append(row)
+        return row
 
     def error(self, path: str | Path, error: str) -> None:
         self.errors.append({"path": str(path), "error": error})
