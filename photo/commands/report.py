@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import Counter, defaultdict
+from html import escape
 from pathlib import Path
 
 from photo.core.filesystem import HEIC_EXTENSIONS, VIDEO_EXTENSIONS, inspect_file, iter_files
@@ -32,7 +33,7 @@ def run(folder: Path, output: Path = Path("photo-report"), allow_root_path: bool
         date_source[source] += 1
         largest.append((info.size, path))
         if info.extension in {".jpg", ".jpeg", ".heic", ".mov"}:
-            live_stems[path.stem].add(info.extension)
+            live_stems[(path.parent, path.stem)].add(info.extension)
         rows.append(
             {
                 "path": str(path),
@@ -61,7 +62,7 @@ def run(folder: Path, output: Path = Path("photo-report"), allow_root_path: bool
         "live_photo_pairs": sum(1 for exts in live_stems.values() if ".mov" in exts and ({".jpg", ".jpeg", ".heic"} & exts)),
         "largest_files": [str(path) for _, path in sorted(largest, reverse=True)[:20]],
     }
-    html = "<html><body><h1>Photo Toolkit Report</h1><pre>" + repr(summary) + "</pre></body></html>\n"
+    html = "<html><body><h1>Photo Toolkit Report</h1><pre>" + escape(repr(summary)) + "</pre></body></html>\n"
     (output / "report.html").write_text(html, encoding="utf-8")
     report.operation(action="report", output=str(output), **summary)
     report.finish(summary)

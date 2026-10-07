@@ -31,13 +31,13 @@ def run(
                 target = retarget_associated_file(path, primary_target, associated)
                 resolved = resolve_destination(associated, target, collision)
                 action = "fix-year" if associated == path else "sidecar-rename"
-                report.operation(
+                operation = report.operation(
                     action=action,
                     source=str(associated),
                     destination=str(resolved or target),
                     new_datetime=captured.isoformat(sep=" "),
                     collision=collision,
-                    executed=execute,
+                    executed=False,
                     skipped=resolved is None,
                 )
                 if execute and resolved:
@@ -45,6 +45,7 @@ def run(
                         update_metadata(path, captured)
                     if resolved != associated:
                         associated.rename(resolved)
+                    operation["executed"] = True
         except Exception as exc:
             report.error(path, str(exc))
     report.finish({"execute": execute})

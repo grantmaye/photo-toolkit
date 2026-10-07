@@ -12,15 +12,16 @@ def run(folder: Path, execute: bool, allow_root_path: bool = False) -> Path:
     assert_safe_source(folder, allow_root_path)
     report = RunReport("strip-gps")
     for path in media_files(folder):
-        report.operation(
+        operation = report.operation(
             action="strip-gps",
             source=str(path),
             warning="Back up photos before removing metadata.",
-            executed=execute,
+            executed=False,
         )
         if execute:
             try:
                 strip_gps_metadata(path)
+                operation["executed"] = True
             except Exception as exc:
                 report.error(path, str(exc))
     report.finish({"execute": execute, "warning": "Back up photos before removing metadata."})

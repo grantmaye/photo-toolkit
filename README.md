@@ -19,13 +19,13 @@ Current release: `v0.2.0`
 
 Large personal media libraries are often messy: mixed camera exports, scanned archives, wrong years, duplicated folders, HEIC/JPEG pairs, zero-byte files, and files with missing or inconsistent metadata. `photo-toolkit` gives self-hosters, family archivists, NAS users, and Immich users a safe way to inspect and prepare those libraries before import.
 
-## Safety guarantees
+## Safety model
 
 - Dry-run by default.
 - File-changing commands require `--execute`.
 - Originals are never modified unless `--execute` is explicitly passed.
-- Commands write logs and reports under `./photo-toolkit-runs/<timestamp>/`.
-- Every run writes `summary.txt`, `summary.json`, `operations.csv`, and `errors.csv`.
+- Commands write logs and reports under `./photo-toolkit-runs/<timestamp>-<unique suffix>/`.
+- Completed runs write `summary.txt`, `summary.json`, `operations.csv`, and `errors.csv`.
 - Duplicate removal never deletes by default; moving duplicates is preferred.
 - Dangerous paths such as `/`, `/home`, `/mnt`, and drive roots are refused unless `--allow-root-path` is passed.
 - Back up your photos before running metadata-changing commands.
@@ -164,3 +164,8 @@ JPG, JPEG, PNG, HEIC, HEIF, MOV, MP4, M4V, DNG, CR2, NEF, ARW, RAF, TIFF, and TI
 ## License
 
 MIT
+
+## Learn the implementation
+
+- [Technical manual: setup through maintenance](docs/technical-manual.md)
+- [Product story, limitations, and demo](docs/product-story.md)
